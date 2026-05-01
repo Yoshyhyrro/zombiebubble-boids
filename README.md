@@ -12,7 +12,7 @@ pip install boidswarm
 
 ## Features (No Advanced Math Required!)
 
-![Boids Animation](boids.gif)
+![Boids Animation](https://raw.githubusercontent.com/Yoshyhyrro/zombiebubble-boids/main/boids.gif)
 
 If you've never used Boids before, think of them as AI agents that group together like flocks of birds or schools of fish. This library makes managing them incredibly robust:
 
