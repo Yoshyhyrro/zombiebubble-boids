@@ -1,0 +1,76 @@
+name: Publish to PyPI
+
+on:
+  push:
+    tags:
+      - "v*"          # git tag v0.1.0 を打ったときだけ動く
+  workflow_dispatch:  # GitHub UI から手動実行も可能
+
+jobs:
+  build:
+    name: Build wheel (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            lib: libzombiebubble.so
+          - os: windows-latest
+            lib: zombiebubble.dll
+          - os: macos-latest
+            lib: libzombiebubble.dylib
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Zig
+        uses: mlugg/setup-zig@v1
+        with:
+          version: "0.15.2"
+
+      - name: Build native library
+        run: zig build pip-lib --release=fast
+
+      - name: Copy library into Python package
+        shell: bash
+        run: |
+          mkdir -p python/zombiebubble
+          cp zig-out/bin/${{ matrix.lib }} python/zombiebubble/ 2>/dev/null || \
+          cp zig-out/lib/${{ matrix.lib }} python/zombiebubble/
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Build wheel
+        run: |
+          pip install build
+          cd python && python -m build --wheel
+
+      - name: Upload wheel artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: wheel-${{ matrix.os }}
+          path: python/dist/*.whl
+
+  publish:
+    name: Publish to PyPI
+    needs: build
+    runs-on: ubuntu-latest
+    environment: pypi          # GitHub → Settings → Environments → "pypi" を作成
+    permissions:
+      id-token: write          # OIDC trusted publisher に必要
+
+    steps:
+      - name: Download all wheels
+        uses: actions/download-artifact@v4
+        with:
+          pattern: wheel-*
+          merge-multiple: true
+          path: dist/
+
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: dist/
