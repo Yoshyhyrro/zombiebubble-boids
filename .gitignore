@@ -3,3 +3,19 @@
 
 # Ada Library Information
 *.ali
+
+# Zig build artifacts
+.zig-cache/
+zig-out/
+
+# Python artifacts
+__pycache__/
+*.pyc
+*.egg-info/
+dist/
+.pytest_cache/
+
+# Compiled shared libraries (built from source)
+*.dll
+*.so
+*.dylib

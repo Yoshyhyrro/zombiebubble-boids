@@ -1,0 +1,43 @@
+[project]
+name = "boidswarm"
+version = "0.1.0"
+description = "ECS boids simulation — free tier: Vec3 math + 3-force flocking"
+readme = "README.md"
+license = { text = "GPL-3.0-only" }
+requires-python = ">=3.11"
+keywords = ["boids", "simulation", "flocking", "ecs"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
+    "Programming Language :: Python :: 3",
+]
+
+[project.urls]
+Homepage = "https://github.com/Yoshyhyrro/zombiebubble-boids"
+
+[project.scripts]
+zombiebubble = "zombiebubble.cli:main"
+
+[project.optional-dependencies]
+dev = ["pytest>=8"]
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["zombiebubble*"]
+
+# Bundle the compiled shared library alongside the Python package.
+[tool.setuptools.package-data]
+zombiebubble = [
+    "*.so",
+    "*.dll",
+    "*.dylib",
+]
