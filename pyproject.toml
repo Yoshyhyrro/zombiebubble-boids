@@ -1,6 +1,6 @@
 [project]
 name = "boidswarm"
-version = "0.1.0"
+version = "0.1.2"
 description = "ECS boids simulation — free tier: Vec3 math + 3-force flocking"
 readme = "README.md"
 license = { text = "GPL-3.0-only" }

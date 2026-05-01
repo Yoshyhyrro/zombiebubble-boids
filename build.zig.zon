@@ -1,6 +1,6 @@
 .{
     .name = .zombiebubble_boids,
-    .fingerprint = 0x6cc06360b467a475,
+    .fingerprint = 0xa2d078f6e100912b,
     .version = "0.1.0",
     .minimum_zig_version = "0.15.2",
     .dependencies = .{},
