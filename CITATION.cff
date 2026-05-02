@@ -1,0 +1,11 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+authors:
+- family-names: "Hasegawa"
+  given-names: "Yoshihiro"
+  orcid: "https://orcid.org/0009-0007-6948-4065"
+title: "zombiebubble-boids"
+version: 1.0.0
+DOI: 10.20944/preprints202604.1412.v1
+date-released: 2026-05-02
+url: "https://github.com/Yoshyhyrro/zombiebubble-boids"
