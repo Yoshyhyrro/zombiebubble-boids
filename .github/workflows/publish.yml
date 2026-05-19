@@ -115,7 +115,7 @@ jobs:
     runs-on: ubuntu-latest
     environment:
       name: pypi
-      url: https://pypi.org/project/zombiebubble/
+      url: https://pypi.org/project/boidswarm/
     permissions:
       id-token: write
 
