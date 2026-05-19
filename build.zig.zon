@@ -2,7 +2,7 @@
     .name = .zombiebubble_boids,
     .fingerprint = 0xa2d078f6e100912b,
     .version = "0.1.0",
-    .minimum_zig_version = "0.15.2",
+    .minimum_zig_version = "0.16.0",
     .dependencies = .{},
     .paths = .{
         "build.zig",

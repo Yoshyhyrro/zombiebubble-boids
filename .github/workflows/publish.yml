@@ -44,7 +44,7 @@ jobs:
       - name: Install Zig
         uses: mlugg/setup-zig@v2.2.1
         with:
-          version: "0.15.2"
+          version: "0.16.0"
 
       - name: Build native library
         run: zig build pip-lib --release=fast
@@ -52,9 +52,9 @@ jobs:
       - name: Copy library into Python package
         shell: bash
         run: |
-          mkdir -p python/zombiebubble
-          cp zig-out/bin/${{ matrix.lib }} python/zombiebubble/ 2>/dev/null || \
-          cp zig-out/lib/${{ matrix.lib }} python/zombiebubble/
+          mkdir -p zombiebubble
+          cp zig-out/bin/${{ matrix.lib }} zombiebubble/ 2>/dev/null || \
+          cp zig-out/lib/${{ matrix.lib }} zombiebubble/
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -64,13 +64,13 @@ jobs:
       - name: Build wheel
         run: |
           pip install build
-          cd python && python -m build --wheel
+          python -m build --wheel
 
       - name: Upload wheel artifact
         uses: actions/upload-artifact@v4
         with:
           name: wheel-${{ matrix.os }}
-          path: python/dist/*.whl
+          path: dist/*.whl
 
 # ════════════════════════════════════════════════
 #  2. ATTACH WHEELS TO GITHUB RELEASE
