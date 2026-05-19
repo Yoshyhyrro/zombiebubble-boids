@@ -1,29 +1,17 @@
-name: Publish to PyPI + GitHub Pages
+name: Publish to PyPI
 
-# ────────────────────────────────────────────────
-#  Triggers
-#   - git tag  v*.*.*  → full build + publish
-#   - GitHub Release published → same path
-#   - workflow_dispatch → manual run
-# ────────────────────────────────────────────────
 on:
   push:
     tags:
       - "v*"
-  release:
-    types: [published]
   workflow_dispatch:
 
 permissions:
-  contents: write        # release asset upload
-  id-token: write        # OIDC trusted publisher (PyPI)
-  pages: write           # GitHub Pages deploy
-  actions: read
+  contents: write   # GitHub Release asset upload
+  id-token: write   # OIDC trusted publisher (PyPI)
 
-# ════════════════════════════════════════════════
-#  1. BUILD — one job per platform
-# ════════════════════════════════════════════════
 jobs:
+  # ── 1. BUILD ──────────────────────────────────────────────────────────────
   build:
     name: Build wheel (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
@@ -72,14 +60,12 @@ jobs:
           name: wheel-${{ matrix.os }}
           path: dist/*.whl
 
-# ════════════════════════════════════════════════
-#  2. ATTACH WHEELS TO GITHUB RELEASE
-# ════════════════════════════════════════════════
-  attach-release-assets:
-    name: Attach wheels to GitHub Release
+  # ── 2. GITHUB RELEASE ─────────────────────────────────────────────────────
+  release:
+    name: Create GitHub Release
     needs: build
     runs-on: ubuntu-latest
-    # タグプッシュ時は先に Release を自動生成してからアセットを付与する
+
     steps:
       - name: Download all wheels
         uses: actions/download-artifact@v4
@@ -88,27 +74,15 @@ jobs:
           merge-multiple: true
           path: dist/
 
-      # タグプッシュ経由のとき: Release がまだ無ければ作成する
-      - name: Create GitHub Release (tag push path)
-        if: startsWith(github.ref, 'refs/tags/')
+      - name: Create release and attach wheels
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ github.ref_name }}
           name: ${{ github.ref_name }}
-          generate_release_notes: true   # コミット差分から自動生成
+          generate_release_notes: true
           files: dist/*.whl
 
-      # release イベント経由のとき: Release は既に存在するのでアセットだけ追加
-      - name: Upload wheels to existing Release
-        if: github.event_name == 'release'
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: ${{ github.event.release.tag_name }}
-          files: dist/*.whl
-
-# ════════════════════════════════════════════════
-#  3. PUBLISH TO PyPI
-# ════════════════════════════════════════════════
+  # ── 3. PUBLISH TO PyPI ────────────────────────────────────────────────────
   publish-pypi:
     name: Publish to PyPI
     needs: build
@@ -131,137 +105,3 @@ jobs:
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           packages-dir: dist/
-
-# ════════════════════════════════════════════════
-#  4. DEPLOY RELEASE NOTES TO GITHUB PAGES
-# ════════════════════════════════════════════════
-  deploy-pages:
-    name: Deploy release notes to GitHub Pages
-    needs: attach-release-assets
-    runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deploy.outputs.page_url }}
-    permissions:
-      pages: write
-      id-token: write
-
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0   # 全タグ履歴が必要
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-
-      # ── リリースノートを含む静的 HTML を生成 ──────────────────────────────
-      - name: Generate Pages site
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          REPO: ${{ github.repository }}
-        run: |
-          pip install -q requests markdown2
-          python - <<'PYEOF'
-          import os, json, textwrap, datetime, requests, markdown2
-
-          token = os.environ["GH_TOKEN"]
-          repo  = os.environ["REPO"]
-          headers = {"Authorization": f"Bearer {token}",
-                     "Accept": "application/vnd.github+json"}
-
-          # GitHub API でリリース一覧を取得
-          r = requests.get(
-              f"https://api.github.com/repos/{repo}/releases",
-              headers=headers, params={"per_page": 20})
-          r.raise_for_status()
-          releases = r.json()
-
-          cards = []
-          for rel in releases:
-              body_html = markdown2.markdown(rel.get("body") or "_No notes._")
-              published = rel["published_at"][:10] if rel.get("published_at") else ""
-              assets = "".join(
-                  f'<li><a href="{a["browser_download_url"]}">{a["name"]}</a>'
-                  f' <span class="size">({a["size"]//1024} KB)</span></li>'
-                  for a in rel.get("assets", [])
-              )
-              asset_block = f"<ul class='assets'>{assets}</ul>" if assets else ""
-              cards.append(f"""
-          <section class="release">
-            <h2><a href="{rel['html_url']}">{rel['tag_name']}</a>
-                <span class="badge">{'pre-release' if rel['prerelease'] else 'release'}</span>
-            </h2>
-            <p class="date">{published}</p>
-            <div class="notes">{body_html}</div>
-            {asset_block}
-          </section>""")
-
-          project   = repo.split("/")[-1]
-          generated = datetime.datetime.utcnow().strftime("%Y-%m-%d %H:%M UTC")
-          html = textwrap.dedent(f"""\
-          <!DOCTYPE html>
-          <html lang="en">
-          <head>
-            <meta charset="utf-8">
-            <meta name="viewport" content="width=device-width,initial-scale=1">
-            <title>{project} — Releases</title>
-            <style>
-              :root{{--accent:#4f9cf9;--bg:#0d1117;--surface:#161b22;--border:#30363d;
-                     --text:#e6edf3;--muted:#8b949e;--pre-bg:#161b22}}
-              *{{box-sizing:border-box;margin:0;padding:0}}
-              body{{font-family:system-ui,sans-serif;background:var(--bg);
-                    color:var(--text);padding:2rem 1rem;max-width:860px;margin:auto}}
-              header{{border-bottom:1px solid var(--border);padding-bottom:1rem;
-                       margin-bottom:2rem}}
-              header h1{{font-size:1.6rem}}
-              header p{{color:var(--muted);font-size:.9rem;margin-top:.25rem}}
-              .release{{background:var(--surface);border:1px solid var(--border);
-                         border-radius:8px;padding:1.25rem 1.5rem;margin-bottom:1.5rem}}
-              .release h2{{font-size:1.15rem;display:flex;align-items:center;gap:.5rem}}
-              .release h2 a{{color:var(--accent);text-decoration:none}}
-              .release h2 a:hover{{text-decoration:underline}}
-              .badge{{font-size:.72rem;padding:.15rem .5rem;border-radius:20px;
-                       background:#21262d;border:1px solid var(--border);color:var(--muted)}}
-              .date{{color:var(--muted);font-size:.82rem;margin:.4rem 0 .8rem}}
-              .notes{{font-size:.92rem;line-height:1.65}}
-              .notes h1,.notes h2,.notes h3{{margin:1rem 0 .4rem;font-size:1rem}}
-              .notes p{{margin-bottom:.6rem}}
-              .notes code{{background:var(--pre-bg);padding:.1rem .35rem;
-                            border-radius:3px;font-size:.85rem}}
-              .notes pre{{background:var(--pre-bg);padding:.75rem;border-radius:6px;
-                           overflow-x:auto;margin:.5rem 0}}
-              .assets{{margin-top:.75rem;padding-left:1.2rem;font-size:.85rem}}
-              .assets li{{margin-bottom:.25rem}}
-              .assets a{{color:var(--accent)}}
-              .size{{color:var(--muted)}}
-              footer{{text-align:center;color:var(--muted);font-size:.8rem;
-                       margin-top:2rem;padding-top:1rem;border-top:1px solid var(--border)}}
-            </style>
-          </head>
-          <body>
-            <header>
-              <h1>📦 {project}</h1>
-              <p>Release history · generated {generated}</p>
-            </header>
-            {''.join(cards) if cards else '<p>No releases yet.</p>'}
-            <footer>Powered by GitHub Actions &amp; GitHub Pages</footer>
-          </body>
-          </html>
-          """)
-
-          os.makedirs("_site", exist_ok=True)
-          with open("_site/index.html", "w", encoding="utf-8") as f:
-              f.write(html)
-          print("Generated _site/index.html")
-          PYEOF
-
-      - name: Upload Pages artifact
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: _site/
-
-      - name: Deploy to GitHub Pages
-        id: deploy
-        uses: actions/deploy-pages@v4
