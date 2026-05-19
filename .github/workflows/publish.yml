@@ -81,27 +81,3 @@ jobs:
           name: ${{ github.ref_name }}
           generate_release_notes: true
           files: dist/*.whl
-
-  # ── 3. PUBLISH TO PyPI ────────────────────────────────────────────────────
-  publish-pypi:
-    name: Publish to PyPI
-    needs: build
-    runs-on: ubuntu-latest
-    environment:
-      name: pypi
-      url: https://pypi.org/project/boidswarm/
-    permissions:
-      id-token: write
-
-    steps:
-      - name: Download all wheels
-        uses: actions/download-artifact@v4
-        with:
-          pattern: wheel-*
-          merge-multiple: true
-          path: dist/
-
-      - name: Publish to PyPI
-        uses: pypa/gh-action-pypi-publish@release/v1
-        with:
-          packages-dir: dist/
