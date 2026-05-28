@@ -161,7 +161,7 @@ pub const Vec3 = struct {
 //   (Dot (Var x) (Var y)))
 pub fn printDotSexpr(lname: []const u8, rname: []const u8) !void {
     const stdout = std.io.getStdOut().writer();
-    try stdout.print("(version 1\n  (Dot (Var {s}) (Var {s})))\n", .{lname, rname});
+    try stdout.print("(version 1\n  (Dot (Var {s}) (Var {s})))\n", .{ lname, rname });
 }
 
 // ============================================================================
