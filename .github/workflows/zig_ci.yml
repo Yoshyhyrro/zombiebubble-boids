@@ -16,7 +16,7 @@ jobs:
       - name: Setup Zig
         uses: goto-bus-stop/setup-zig@v2
         with:
-          version: 0.13.0 # 使用したいバージョンを指定
+          version: 0.15.2
 
       - name: Check format
         run: zig fmt --check .
