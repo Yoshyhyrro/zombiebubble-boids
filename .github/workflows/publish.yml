@@ -21,7 +21,7 @@ jobs:
             lib: libzombiebubble.dylib
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Install Zig
         uses: mlugg/setup-zig@v1
