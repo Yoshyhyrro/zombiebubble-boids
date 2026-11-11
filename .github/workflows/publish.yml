@@ -39,7 +39,7 @@ jobs:
           cp zig-out/lib/${{ matrix.lib }} python/zombiebubble/
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v7
         with:
           python-version: "3.11"
 
